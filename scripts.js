@@ -11,6 +11,48 @@ function initMap() {
     var input1 = document.getElementById("destination");
     var autocomplete1 = new google.maps.places.Autocomplete(input1, options);
   };
+
+  async function drawLines(locations, destinationInput, maxDistance) {
+    const directionsService = new google.maps.DirectionsService();
+    const map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 55.53, lng: 9.4 },
+        zoom: 10,
+    });
+
+    const bounds = new google.maps.LatLngBounds();
+
+    for (const location of locations) {
+        const request = {
+            origin: location,
+            destination: destinationInput,
+            travelMode: google.maps.TravelMode.BICYCLING,
+        };
+
+        directionsService.route(request, function (result, status) {
+            if (status === 'OK') {
+                const color = result.routes[0].legs[0].distance.value / 1000 <= maxDistance ? 'blue' : 'red';
+                const polyline = new google.maps.Polyline({
+                    path: result.routes[0].overview_path,
+                    geodesic: true,
+                    strokeColor: color,
+                    strokeOpacity: 1.0,
+                    strokeWeight: 2,
+                });
+                polyline.setMap(map);
+
+                // Loop through each point in the path to extend the bounds
+                result.routes[0].overview_path.forEach(point => {
+                    bounds.extend(point);
+                });
+
+                // Adjust the map to fit all polylines
+                map.fitBounds(bounds);
+            } else {
+                console.error('Error fetching directions:', status);
+            }
+        });
+    }
+}
   
   async function processCSV() {
     const csvFileInput = document.getElementById('csvFile');
@@ -46,17 +88,21 @@ function initMap() {
 
         const modifiedCsv = [];
 
-        for (let i = 0; i < lines.length; i++) {
+        const locations = [];
+
+        for (let i = 0; i < lines.length - 1; i++) {
             const line = lines[i].trim();
             console.log("line: " + line);
 
             if (i === 0) {// Header row
                 modifiedCsv.push(line + ',Flag'); // Add "Flag" to the header
             } else if (line) {
+                locations.push(line);
                 const flag = await calculateDistance(line, destinationInput, maxDistance);
                 modifiedCsv.push(line + ',"' + flag + '"'); // Add flag value to each row
             }
         }
+        drawLines(locations, destinationInput, maxDistance);
 
         // Display modified CSV
         document.getElementById('response').innerText = modifiedCsv.join('\n');
@@ -87,7 +133,7 @@ async function calculateDistance(location, destinationInput, maxDistance) {
         service.getDistanceMatrix(request, function (response, status) {
             if (status === 'OK' && response.rows.length > 0 && response.rows[0].elements.length > 0) {
                 const distance = response.rows[0].elements[0].distance.value / 1000; // Convert meters to kilometers
-                
+
                 console.log("location: " + location);
                 console.log("Distance: " + distance + " km");
 
