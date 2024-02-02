@@ -21,8 +21,19 @@ function initMap() {
     console.log("maxDistance: " + maxDistance);
 
     const file = csvFileInput.files[0];
+
     if (!file) {
         alert('Please choose a CSV file.');
+        return;
+    }
+
+    if(destinationInput == ""){
+        alert('Please enter your Destination.');
+        return;
+    }
+
+    if(isNaN(maxDistance)){
+        alert('Please enter your max Distance.');
         return;
     }
 
@@ -39,8 +50,7 @@ function initMap() {
             const line = lines[i].trim();
             console.log("line: " + line);
 
-            if (i === 0) {
-                // Header row
+            if (i === 0) {// Header row
                 modifiedCsv.push(line + ',Flag'); // Add "Flag" to the header
             } else if (line) {
                 const flag = await calculateDistance(line, destinationInput, maxDistance);
@@ -77,10 +87,11 @@ async function calculateDistance(location, destinationInput, maxDistance) {
         service.getDistanceMatrix(request, function (response, status) {
             if (status === 'OK' && response.rows.length > 0 && response.rows[0].elements.length > 0) {
                 const distance = response.rows[0].elements[0].distance.value / 1000; // Convert meters to kilometers
+                
                 console.log("location: " + location);
                 console.log("Distance: " + distance + " km");
 
-                const flag = distance <= maxDistance ? 'YES' : 'NO';
+                const flag = distance > maxDistance ? 'YES' : 'NO';
                 console.log("flag: " + flag);
                 resolve(flag); // Resolve the promise with the flag value
             } else {
