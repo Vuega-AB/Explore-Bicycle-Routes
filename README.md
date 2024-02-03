@@ -31,7 +31,7 @@ Enter your Google Maps API key.
 You will be redirected to the main application page.
 Use the application to process CSV files, enter destinations, and explore bicycle routes.
 
-#Live Demo
+# Live Demo
 Explore Bicycle Routes is available online at https://vuega-ab.github.io/Explore-Bicycle-Routes/
 
 
