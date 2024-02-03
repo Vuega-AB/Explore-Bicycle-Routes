@@ -21,7 +21,20 @@
   </div>
 
   <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
-  <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_PRIVATE_KEY&loading=async&libraries=places&callback=initMap"></script>
   <script src="scripts.js"></script>
+
+  <script>
+    // Retrieve the API key from localStorage
+    const apiKey = localStorage.getItem('apiKey');
+
+    if (apiKey) {
+      // Dynamically load the Google Maps API script with the stored API key
+      const scriptTag = document.createElement('script');
+      scriptTag.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMap`;
+      document.head.appendChild(scriptTag);
+    } else {
+      console.error('API key is missing. Please enter your API key.');
+    }
+  </script>
 </body>
 </html>
