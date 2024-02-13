@@ -30,7 +30,7 @@ function initMap() {
 
         directionsService.route(request, function (result, status) {
             if (status === 'OK') {
-                const color = result.routes[0].legs[0].distance.value / 1000 <= maxDistance ? 'blue' : 'red';
+                const color = result.routes[0].legs[0].distance.value <= maxDistance ? 'blue' : 'red';
                 const polyline = new google.maps.Polyline({
                     path: result.routes[0].overview_path,
                     geodesic: true,
@@ -132,10 +132,11 @@ async function calculateDistance(location, destinationInput, maxDistance) {
     return new Promise((resolve, reject) => {
         service.getDistanceMatrix(request, function (response, status) {
             if (status === 'OK' && response.rows.length > 0 && response.rows[0].elements.length > 0) {
-                const distance = response.rows[0].elements[0].distance.value / 1000; // Convert meters to kilometers
+                const distance = response.rows[0].elements[0].distance.value;
 
                 console.log("location: " + location);
-                console.log("Distance: " + distance + " km");
+                console.log("Distance: " + distance + " m");
+                console.log("maxDistance: "+maxDistance);
 
                 const flag = distance > maxDistance ? 'YES' : 'NO';
                 console.log("flag: " + flag);
