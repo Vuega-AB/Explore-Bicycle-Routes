@@ -1,5 +1,5 @@
 function initMap() {
-    const map = new google.maps.Map(document.getElementById("map"), {
+    new google.maps.Map(document.getElementById("map"), {
       center: { lat: 55.53, lng: 9.4 },
       zoom: 10,
     });
@@ -9,8 +9,9 @@ function initMap() {
   
   window.onload = function () {
     var input1 = document.getElementById("destination");
-    var autocomplete1 = new google.maps.places.Autocomplete(input1, options);
+    new google.maps.places.Autocomplete(input1, options);
   };
+
 
   async function drawLines(locations, destinationInput, maxDistance) {
     const directionsService = new google.maps.DirectionsService();
@@ -18,8 +19,24 @@ function initMap() {
         center: { lat: 55.53, lng: 9.4 },
         zoom: 10,
     });
-
     const bounds = new google.maps.LatLngBounds();
+    
+    // Add marker for the destination
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ address: destinationInput }, function(results, status) {
+        if (status === 'OK') {
+            const destinationLocation = results[0].geometry.location;
+            const destinationMarker = new google.maps.Marker({
+                position: destinationLocation,
+                map: map,
+                icon: {
+                    url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png' // Red marker icon
+                }
+            });
+        } else {
+            console.error('Geocode was not successful for the following reason:', status);
+        }
+    });
 
     for (const location of locations) {
         const request = {
@@ -27,7 +44,6 @@ function initMap() {
             destination: destinationInput,
             travelMode: google.maps.TravelMode.BICYCLING,
         };
-
         directionsService.route(request, function (result, status) {
             if (status === 'OK') {
                 const color = result.routes[0].legs[0].distance.value <= maxDistance ? 'blue' : 'red';
@@ -39,13 +55,9 @@ function initMap() {
                     strokeWeight: 2,
                 });
                 polyline.setMap(map);
-
-                // Loop through each point in the path to extend the bounds
                 result.routes[0].overview_path.forEach(point => {
                     bounds.extend(point);
                 });
-
-                // Adjust the map to fit all polylines
                 map.fitBounds(bounds);
             } else {
                 console.error('Error fetching directions:', status);
@@ -53,6 +65,7 @@ function initMap() {
         });
     }
 }
+
   
   async function processCSV() {
     const csvFileInput = document.getElementById('csvFile');
@@ -114,6 +127,7 @@ function initMap() {
 
     reader.readAsText(file);
 }
+//postgres://explore_bicycle_routes_user:lEDM6m3U6MiQX7nJGsAvzUwyHEWtWbwT@dpg-cngs8micn0vc73fbcabg-a.oregon-postgres.render.com/explore_bicycle_routes
 
 async function calculateDistance(location, destinationInput, maxDistance) {
     const service = new google.maps.DistanceMatrixService();
@@ -129,21 +143,28 @@ async function calculateDistance(location, destinationInput, maxDistance) {
         avoidTolls: false,
     };
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         service.getDistanceMatrix(request, function (response, status) {
+            console.log("response: ", response);
+
             if (status === 'OK' && response.rows.length > 0 && response.rows[0].elements.length > 0) {
-                const distance = response.rows[0].elements[0].distance.value;
+                const element = response.rows[0].elements[0];
 
-                console.log("location: " + location);
-                console.log("Distance: " + distance + " m");
-                console.log("maxDistance: "+maxDistance);
+                if (element.status === 'OK' && element.distance) {
+                    const distance = element.distance.text;
+                    console.log("location: " + location);
+                    console.log("Distance: " + distance);
+                    console.log("maxDistance: " + maxDistance);
 
-                const flag = distance > maxDistance ? 'YES' : 'NO';
-                console.log("flag: " + flag);
-                resolve(flag); // Resolve the promise with the flag value
+                    const flag = distance > maxDistance ? 'YES' : 'NO';
+                    resolve(flag);
+                } else {
+                    console.warn('No path available for:', location);
+                    resolve('NO PATH');
+                }
             } else {
                 console.error('Error fetching distance matrix:', status);
-                reject(); // Reject the promise if there's an error
+                resolve('NO PATH'); // Set flag to "NO PATH" on error
             }
         });
     });

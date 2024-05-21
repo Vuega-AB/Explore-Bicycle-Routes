@@ -63,3 +63,9 @@ button:disabled {
   background-color: #ddd;
   cursor: not-allowed;
 }
+
+
+#api-key-container {
+  text-align: center;
+}
+
