@@ -38,7 +38,23 @@ function initMap() {
         }
     });
 
+    // Add markers for origin addresses
     for (const location of locations) {
+        geocoder.geocode({ address: location }, function(results, status) {
+            if (status === 'OK') {
+                const originLocation = results[0].geometry.location;
+                const originMarker = new google.maps.Marker({
+                    position: originLocation,
+                    map: map,
+                    icon: {
+                        url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png' // Blue marker icon
+                    }
+                });
+            } else {
+                console.error('Geocode was not successful for the following reason:', status);
+            }
+        });
+
         const request = {
             origin: location,
             destination: destinationInput,
@@ -65,9 +81,8 @@ function initMap() {
         });
     }
 }
-
   
-  async function processCSV() {
+async function processCSV() {
     const csvFileInput = document.getElementById('csvFile');
     const destinationInput = document.getElementById('destination').value;
     const maxDistance = parseFloat(document.getElementById('maxDistance').value);
@@ -92,7 +107,11 @@ function initMap() {
         return;
     }
 
+    // Show loading overlay
+    document.getElementById('loading-overlay').style.display = 'block';
+    console.log("stuck?");
     const reader = new FileReader();
+    console.log("here?");
     reader.onload = async function (e) {
         const csvContent = e.target.result;
 
@@ -112,9 +131,13 @@ function initMap() {
             } else if (line) {
                 locations.push(line);
                 const flag = await calculateDistance(line, destinationInput, maxDistance);
-                modifiedCsv.push(line + ',"' + flag + '"'); // Add flag value to each row
+                modifiedCsv.push(line + "," + flag); // Add flag value to each row
             }
         }
+
+        // Hide loading overlay after processing
+        document.getElementById('loading-overlay').style.display = 'none';
+
         drawLines(locations, destinationInput, maxDistance);
 
         // Display modified CSV
@@ -123,10 +146,12 @@ function initMap() {
         // Enable the download button
         const downloadButton = document.getElementById('downloadButton');
         downloadButton.disabled = false;
+        console.log("modifiedCsv:",modifiedCsv);
     };
 
-    reader.readAsText(file);
+    reader.readAsText(file, 'ISO-8859-1'); // Specify the character encoding
 }
+
 //postgres://explore_bicycle_routes_user:lEDM6m3U6MiQX7nJGsAvzUwyHEWtWbwT@dpg-cngs8micn0vc73fbcabg-a.oregon-postgres.render.com/explore_bicycle_routes
 
 async function calculateDistance(location, destinationInput, maxDistance) {
@@ -151,12 +176,14 @@ async function calculateDistance(location, destinationInput, maxDistance) {
                 const element = response.rows[0].elements[0];
 
                 if (element.status === 'OK' && element.distance) {
-                    const distance = element.distance.text;
+
+                    const distance = element.distance.value;
                     console.log("location: " + location);
                     console.log("Distance: " + distance);
                     console.log("maxDistance: " + maxDistance);
-
+                    console.log(distance + ">" + maxDistance);
                     const flag = distance > maxDistance ? 'YES' : 'NO';
+                    console.log("flag:", flag);
                     resolve(flag);
                 } else {
                     console.warn('No path available for:', location);
@@ -170,14 +197,20 @@ async function calculateDistance(location, destinationInput, maxDistance) {
     });
 }
 
-    function downloadCSV() {
-        const content = document.getElementById('response').innerText;
-        const filename = 'modified_data.csv';
+function downloadCSV() {
+    const content = document.getElementById('response').innerText;
+    const filename = 'modified_data.csv';
 
-        const blob = new Blob([content], { type: 'text/csv' });
-        const link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = filename;
-        link.click();
-    }
+    const csvData = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), content], { type: 'text/csv;charset=utf-8;' });
+    const csvURL = window.URL.createObjectURL(csvData);
+    const link = document.createElement('a');
+    link.href = csvURL;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+
+
   
