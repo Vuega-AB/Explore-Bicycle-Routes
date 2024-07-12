@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Distance Service</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="static/styles.css">
 </head>
 <body>
   <div id="loading-overlay">
@@ -23,7 +23,7 @@
     <div id="map"></div>
   </div>
 
-  <script>
+  <!-- <script>
     // Retrieve the API key from localStorage
     const apiKey = localStorage.getItem('apiKey');
 
@@ -36,6 +36,26 @@
       console.error('API key is missing. Please enter your API key.');
     }
   </script>
-  <script src="scripts.js"></script>
+  <script src="scripts.js"></script> -->
+
+  <script>
+    const apiKey = "{{ api_key }}";
+    const all_src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMap`;
+
+    const script = document.createElement('script');
+    script.src = all_src;
+    script.async = true;
+    script.defer = true;
+
+    script.onload = function() {
+        console.log("Google Maps API script loaded successfully.");
+    };
+    
+    document.body.appendChild(script);
+  </script>
+
+  <!-- Load the custom scripts file after the Google Maps API -->
+  <script src="static/scripts.js"></script>
+
 </body>
 </html>
